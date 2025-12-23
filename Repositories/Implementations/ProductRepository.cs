@@ -13,6 +13,15 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
     public async Task<bool> ExistsAsync(int id)
         => await _context.Products.AnyAsync(p => p.Id == id);
 
+    
+    public override async Task<Product?> GetByIdAsync(int id)
+    {
+        return await _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Supplier)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
     public IQueryable<Product> GetFilteredProducts(ProductQueryDto query)
     {
         var products = _context.Products
@@ -36,9 +45,11 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             products = products.Where(p => p.Price <= query.MaxPrice);
 
         if (query.InStock.HasValue)
+        {
             products = query.InStock.Value
                 ? products.Where(p => p.StockQuantity > 0)
                 : products.Where(p => p.StockQuantity == 0);
+        }
 
         return products;
     }
